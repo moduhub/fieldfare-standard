@@ -1,0 +1,36 @@
+{
+  "name": "@fieldfare/standard",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./src/index.js",
+  "description": "Services and other functionality built over the Fieldfare framework that is common to many systems",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "yalc retreat --all",
+    "postpack": "yalc restore --all"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/moduhub/fieldfare-standard.git"
+  },
+  "keywords": [
+    "standard",
+    "fieldfare",
+    "services",
+    "functions",
+    "common"
+  ],
+  "exports": {
+    ".": "./src/index.js",
+    "./services": "./src/services/index.js"
+  },
+  "author": "Adan Kvitschal",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/moduhub/fieldfare-standard/issues"
+  },
+  "homepage": "https://github.com/moduhub/fieldfare-standard#readme",
+  "dependencies": {
+    "@fieldfare/core": "file:.yalc/@fieldfare/core"
+  }
+}
