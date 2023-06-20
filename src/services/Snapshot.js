@@ -23,7 +23,6 @@ export class SnapshotService extends LocalService {
         // }
 
         //2) Check if provided state is valid
-        console.log('newState', stateMessage);
         Utils.validateParameters(stateMessage, ['service', 'data', 'signature', 'source']);
         Utils.validateParameters(stateMessage.data, ['id', 'ts', 'collections']);
         const timeDelta = Date.now() - stateMessage.data.ts;
@@ -44,7 +43,6 @@ export class SnapshotService extends LocalService {
             let stateIsNewer = false;
             if(valueChunk) {
                 prevState = await valueChunk.expand(0);
-                console.log('prevState', prevState);
                 if(prevState.data.ts < stateMessage.data.ts) {
                     stateIsNewer = true;
                 }
