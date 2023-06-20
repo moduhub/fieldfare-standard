@@ -49,8 +49,11 @@ export class SnapshotService extends LocalService {
             }
             if(stateIsNewer || !prevState) {
                 const stateChunk = await Chunk.fromObject(stateMessage);
-                //4) Touch status full contents
-                //await stateChunk.touch();
+                //4) Clone complete state
+                const starTime = Date.now();
+                const numClonedChunks = await stateChunk.clone();
+                const elapsedTime = Date.now() - starTime;
+                logger.debug('SnapshotService.store() cloned ' + numClonedChunks + ' chunks in ' + elapsedTime + 'ms');
                 //5) Store state as latest
                 await hostStates.set(keyChunk, stateChunk);
                 await this.collection.updateElement('hostStates', hostStates.descriptor);
