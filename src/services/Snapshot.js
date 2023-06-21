@@ -5,7 +5,7 @@
  * ISC LICENSE
  */
 
-import { LocalService, Chunk, HostIdentifier, Utils, cryptoManager } from '@fieldfare/core';
+import { LocalService, Chunk, HostIdentifier, Utils, cryptoManager, logger} from '@fieldfare/core';
 
 export {SnapshotService as implementation};
 
@@ -14,9 +14,6 @@ export const uuid = 'd2b38791-51af-4767-ad08-2f9f1425e90e';
 export class SnapshotService extends LocalService {
 
     async store(remoteHost, stateMessage) {
-
-        console.log('SnapshotService.store() called with stateMessage: ' + JSON.stringify(stateMessage) + ' from remote ' + remoteHost.id);
-
         //1) Check if remoteHost belongs to the enviroment
         // if(await this.environment.belongs(remoteHost) === false) {
         //     throw Error('host does not belong to the environment');
@@ -41,18 +38,26 @@ export class SnapshotService extends LocalService {
             const valueChunk = await hostStates.get(keyChunk);
             let prevState = null;
             let stateIsNewer = false;
+            let stateIsDifferent = false;
             if(valueChunk) {
                 prevState = await valueChunk.expand(0);
                 if(prevState.data.ts < stateMessage.data.ts) {
                     stateIsNewer = true;
                 }
+                for(const uuid in prevState.data.collections) {
+                    if(!stateMessage.data.collections[uuid]
+                    || stateMessage.data.collections[uuid] !== prevState.data.collections[uuid]) {
+                        stateIsDifferent = true;
+                    }
+                }
             }
-            if(stateIsNewer || !prevState) {
+            if((stateIsNewer && stateIsDifferent) || !prevState) {
                 const stateChunk = await Chunk.fromObject(stateMessage);
-                //4) Clone complete state
-                const starTime = Date.now();
+                stateChunk.ownerID = remoteHost.id;
+                //4) Clone complete stat
+                const startTime = Date.now();
                 const numClonedChunks = await stateChunk.clone();
-                const elapsedTime = Date.now() - starTime;
+                const elapsedTime = Date.now() - startTime;
                 logger.debug('SnapshotService.store() cloned ' + numClonedChunks + ' chunks in ' + elapsedTime + 'ms');
                 //5) Store state as latest
                 await hostStates.set(keyChunk, stateChunk);
@@ -60,7 +65,6 @@ export class SnapshotService extends LocalService {
                 return 'ok';
             }
         }
-        
         return 'state is stale';
     }
 
