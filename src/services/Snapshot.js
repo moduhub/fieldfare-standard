@@ -19,52 +19,59 @@ export class SnapshotService extends LocalService {
         //     throw Error('host does not belong to the environment');
         // }
 
+        logger.debug('[STORE] Called by ' + remoteHost.id);
         //2) Check if provided state is valid
         Utils.validateParameters(stateMessage, ['service', 'data', 'signature', 'source']);
         Utils.validateParameters(stateMessage.data, ['id', 'ts', 'collections']);
         const timeDelta = Date.now() - stateMessage.data.ts;
         if(timeDelta > 1000 * 60 * 60 * 24) {   //a day
+            logger.debug('[STORE] Rejected: state is too old');
             throw Error('state is too old');
         }
         const signatureIsValid = await cryptoManager.verifyMessage(stateMessage, remoteHost.pubKey);
         if(!signatureIsValid) {
+            logger.debug('[STORE] Rejected: sigature is invalid');
             throw Error('signature is invalid');
         }
 
         //3) Check if provided state is newer than previous
         const hostStates = await this.collection.getElement('hostStates');
-        if(hostStates) {
-            const keyChunk = Chunk.fromIdentifier(HostIdentifier.toChunkIdentifier(remoteHost.id));
-            const valueChunk = await hostStates.get(keyChunk);
-            let prevState = null;
-            let stateIsNewer = false;
-            let stateIsDifferent = false;
-            if(valueChunk) {
-                prevState = await valueChunk.expand(0);
-                if(prevState.data.ts < stateMessage.data.ts) {
-                    stateIsNewer = true;
-                }
-                for(const uuid in prevState.data.collections) {
-                    if(!stateMessage.data.collections[uuid]
-                    || stateMessage.data.collections[uuid] !== prevState.data.collections[uuid]) {
-                        stateIsDifferent = true;
-                    }
-                }
+        if(!hostStates) {
+            logger.debug('[STORE] Internal error: hostStates is null');
+            throw Error('hostStates is null');
+        }
+        const keyChunk = Chunk.fromIdentifier(HostIdentifier.toChunkIdentifier(remoteHost.id));
+        const valueChunk = await hostStates.get(keyChunk);
+        let prevState = null;
+        let stateIsNewer = false;
+        let stateIsDifferent = false;
+        if(valueChunk) {
+            prevState = await valueChunk.expand(0);
+            if(prevState.data.ts < stateMessage.data.ts) {
+                stateIsNewer = true;
             }
-            if((stateIsNewer && stateIsDifferent) || !prevState) {
-                const stateChunk = await Chunk.fromObject(stateMessage);
-                stateChunk.ownerID = remoteHost.id;
-                //4) Clone complete stat
-                const startTime = Date.now();
-                const numClonedChunks = await stateChunk.clone();
-                const elapsedTime = Date.now() - startTime;
-                logger.debug('SnapshotService.store() cloned ' + numClonedChunks + ' chunks in ' + elapsedTime + 'ms');
-                //5) Store state as latest
-                await hostStates.set(keyChunk, stateChunk);
-                await this.collection.updateElement('hostStates', hostStates.descriptor);
-                return 'ok';
+            for(const uuid in prevState.data.collections) {
+                if(!stateMessage.data.collections[uuid]
+                || stateMessage.data.collections[uuid] !== prevState.data.collections[uuid]) {
+                    stateIsDifferent = true;
+                }
             }
         }
+        if((stateIsNewer && stateIsDifferent) || !prevState) {
+            const stateChunk = await Chunk.fromObject(stateMessage);
+            stateChunk.ownerID = remoteHost.id;
+            //4) Clone complete stat
+            const startTime = Date.now();
+            const numClonedChunks = await stateChunk.clone();
+            const elapsedTime = Date.now() - startTime;
+            logger.debug('SnapshotService.store() cloned ' + numClonedChunks + ' chunks in ' + elapsedTime + 'ms');
+            //5) Store state as latest
+            await hostStates.set(keyChunk, stateChunk);
+            await this.collection.updateElement('hostStates', hostStates.descriptor);
+            logger.debug('[STORE] state updated');
+            return 'ok';
+        }
+        logger.debug('[STORE] state is stale');
         return 'state is stale';
     }
 
