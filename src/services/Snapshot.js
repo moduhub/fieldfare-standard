@@ -50,11 +50,19 @@ export class SnapshotService extends LocalService {
             if(prevState.data.ts < stateMessage.data.ts) {
                 stateIsNewer = true;
             }
-            for(const uuid in prevState.data.collections) {
-                if(!stateMessage.data.collections[uuid]
-                || stateMessage.data.collections[uuid] !== prevState.data.collections[uuid]) {
+                for (const uuid in stateMessage.data.collections) {
+                        let status;
+                        if(uuid in prevState.data.collections === false) {
+                                status = ' [new]';
+                                stateIsDifferent=true;
+                        } else
+                        if(prevState.data.collections[uuid] !== stateMessage.data.collections[uuid]) {
                     stateIsDifferent = true;
-                }
+                                status = ' [change]';
+                        } else {
+                                status = ' [stale]';
+                        }
+                        logger.debug('[STORE-C'+gNumCalls+']' + uuid + ' => ' + stateMessage.data.collections[uuid] + status);
             }
         }
         if((stateIsNewer && stateIsDifferent) || !prevState) {
