@@ -9,7 +9,28 @@ import { LocalService, Chunk, HostIdentifier, Utils, cryptoManager, logger} from
 
 export {SnapshotService as implementation};
 
-export const uuid = 'd2b38791-51af-4767-ad08-2f9f1425e90e';
+export const snapshotServiceUUID = 'd2b38791-51af-4767-ad08-2f9f1425e90e';
+
+const snapshotServiceDefinition = {
+    "uuid": snapshotServiceUUID,
+    "name": "snapshot",
+    "methods": [
+        "store"
+    ],
+    "collection": [
+        {
+            "name": "hostStates",
+            "descriptor": {
+                "type": "map",
+                "degree": 4
+            }
+        }
+    ]
+};
+
+export {snapshotServiceUUID as uuid};
+export {snapshotServiceDefinition as definition};
+export {SnapshotService as implementation};
 
 var gNumCalls=0;
 
