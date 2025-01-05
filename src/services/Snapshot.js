@@ -7,8 +7,6 @@
 
 import { LocalService, Chunk, HostIdentifier, Utils, cryptoManager, logger} from '@fieldfare/core';
 
-export {SnapshotService as implementation};
-
 export const snapshotServiceUUID = 'd2b38791-51af-4767-ad08-2f9f1425e90e';
 
 const snapshotServiceDefinition = {
